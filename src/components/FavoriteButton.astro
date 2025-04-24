@@ -1,0 +1,100 @@
+---
+const { city, latitude, longitude } = Astro.props;
+---
+
+<button 
+  class="favorite-button cursor-pointer"
+  aria-label="Add to favorites"
+  data-city={city}
+  data-latitude={latitude}
+  data-longitude={longitude}>
+    <svg class="star-icon w-6 h-6 stroke-gray-400 fill-transparent" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+    </svg>
+</button>
+  
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const buttons = document.querySelectorAll('.favorite-button');
+    
+    const STORAGE_KEY = "favoriteCities";
+    
+    buttons.forEach(button => {
+      const starIcon = button.querySelector('.star-icon');
+      if (!starIcon) return;
+      
+      let currentCityData = {
+        address: button.dataset.city,
+        latitude: parseFloat(button.dataset.latitude),
+        longitude: parseFloat(button.dataset.longitude)
+      };
+      
+      updateStarState();
+      
+      button.addEventListener('click', () => {
+        toggleFavorite();
+        updateStarState();
+      });
+      
+      function toggleFavorite() {
+        try {
+          let favorites = [];
+          
+          try {
+            const storedFavorites = localStorage.getItem(STORAGE_KEY);
+            if (storedFavorites) {
+              favorites = JSON.parse(storedFavorites);
+            }
+          } catch (error) {
+            console.error('Error reading favorites:', error);
+            favorites = [];
+          }
+          
+          const index = favorites.findIndex(city => city.address === currentCityData.address);
+          
+          if (index >= 0) {
+            favorites.splice(index, 1);
+          } else {
+            favorites.push(currentCityData);
+          }
+          
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(favorites));
+
+          document.dispatchEvent(new CustomEvent('favoritesUpdated', {
+            detail: { favorites },
+            bubbles: true
+          }));
+        } catch (error) {
+          console.error('Error toggling favorite:', error);
+        }
+      }
+      
+      function updateStarState() {
+        try {
+          let isFavorite = false;
+          
+          try {
+            const storedFavorites = localStorage.getItem(STORAGE_KEY);
+            if (storedFavorites) {
+              const favorites = JSON.parse(storedFavorites);
+              isFavorite = favorites.some(city => city.address === currentCityData.address);
+            }
+          } catch (error) {
+            console.error('Error checking favorite status:', error);
+            isFavorite = false;
+          }
+          
+          if (isFavorite) {
+            starIcon.classList.add('fill-yellow-400', 'stroke-yellow-400');
+            starIcon.classList.remove('fill-transparent', 'stroke-gray-400');
+          } else {
+            starIcon.classList.remove('fill-yellow-400', 'stroke-yellow-400');
+            starIcon.classList.add('fill-transparent', 'stroke-gray-400');
+          }
+        } catch (error) {
+          console.error('Error updating star state:', error);
+        }
+      }
+    });
+  });
+</script>

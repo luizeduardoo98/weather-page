@@ -1,0 +1,28 @@
+---
+import WeatherIcon from "./WeatherIcon.astro";
+import DateText from "./Date.astro";
+import { fetchDailyForecast } from '../lib/api/meteo';
+
+const {city, lat, lon} = Astro.props;
+
+const url = new URL(Astro.request.url);
+const dateQuery = url.searchParams.get('date');
+const date = dateQuery ?? new Date().toLocaleDateString('sv-SE');
+const forecastData = await fetchDailyForecast({date, lat, lon});
+---
+
+{forecastData.length > 0 && (
+  <div class="flex flex-col gap-4 md:gap-8">
+    {forecastData.map((item) => (
+      <a 
+        href={date === item.rawDate ? '#' : `?date=${item.rawDate}&lat=${lat}&lon=${lon}&city=${encodeURIComponent(city)}`} 
+        class={`md:px-4 rounded-md flex justify-center items-center gap-12 cursor-pointer hover:bg-gray-100 ${date === item.rawDate ? 'bg-gray-100' : ''}`}
+      >
+        <DateText weekday={item.day} date={item.date} />
+        <div class=" flex gap-1 md:flex md:items-center ">
+          <WeatherIcon code={item.weatherCode} temp={item.temp} />
+        </div>
+      </a>
+    ))}
+  </div>
+)}

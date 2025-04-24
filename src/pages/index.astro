@@ -1,0 +1,67 @@
+---
+export const prerender = false;
+import CurrentDate from '../components/CurrentDate.astro';
+import CurrentWeather from '../components/CurrentWeather.astro';
+import City from '../components/City.astro';
+import ThreeHourForecast from '../components/ThreeHourForecast.astro';
+import DailyForecast from "../components/DailyForecast.astro";
+import SearchInput from '../components/SearchInput.astro';
+import FavoriteDropdown from '../components/FavoriteDropdown.jsx';
+import Layout from '../layouts/Layout.astro';
+import UserLocation from '@/components/UserLocation.astro';
+import "../styles/global.css";
+
+const url = new URL(Astro.request.url);
+const lat = url.searchParams.get('lat') || 49.2827;
+const lon = url.searchParams.get('lon') || -123.1207;
+const city = url.searchParams.get('city') || 'Vancouver';
+
+let selectedDate = new Date().toISOString().split("T")[0];
+
+const cookieHeader = Astro.request.headers.get("cookie");
+if (cookieHeader) {
+  const match = cookieHeader.match(/selectedDate=([^;]+)/);
+  if (match) {
+    selectedDate = match[1];
+  }
+}
+---
+
+<Layout>
+	<div class="md:items-center justify-center max-w-[1080px] mx-auto pt-6 px-6">
+		<div class="flex gap-2 items-center w-full justify-between md:py-12">
+			<div class="max-w-[240px] ml-auto">
+				<FavoriteDropdown client:load />
+			</div>
+			<City class="hidden md:flex" {city} {lat} {lon} />
+			<div class="max-w-[240px] ml-auto">
+				<SearchInput />
+			</div>
+		</div>	
+		<City class="md:hidden py-8" {city} {lat} {lon} />
+		<div class="flex flex-col md:flex-row md:items-between gap-16 md:gap-20 justify-center ">
+			<div class="w-full space-y-4 md:space-y-0">
+				<div class="flex">
+					<CurrentDate />
+					<CurrentWeather />
+				</div>
+				<ThreeHourForecast {lat} {lon} />
+			</div>
+			<DailyForecast {lat} {lon} {city} />
+		</div>
+	</div>
+</div>
+</Layout>
+
+<script is:inline>
+  // Lógica para salvar data clicada (DailyForecast)
+  window.addEventListener('date-selected', (event) => {
+    const selectedDate = event.detail;
+    console.log("✅ Saving selectedDate in cookie:", selectedDate);
+
+    setTimeout(() => {
+      document.cookie = `selectedDate=${selectedDate}; path=/`;
+      window.location.reload();
+    }, 100);
+  });
+</script>
